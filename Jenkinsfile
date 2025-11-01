@@ -4,7 +4,7 @@ pipeline {
     environment {
         APP_NAME = "myapp"
         DEPLOY_USER = "ec2-user"
-        DEPLOY_HOST = "your.server.ip"
+        DEPLOY_HOST = "your.server.ip"   // Replace with your EC2 public IP or hostname
         DEPLOY_DIR = "/var/www/myapp"
         SERVICE_SCRIPT = "/var/www/myapp/restart.sh"
     }
@@ -13,7 +13,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "Checking out code..."
-                git branch: 'main', url: 'https://github.com/yourusername/yourrepo.git'
+                git branch: 'main', url: 'https://github.com/leenavemula25/jenkins-demo.git', credentialsId: 'github-token'
             }
         }
 
@@ -21,11 +21,13 @@ pipeline {
             steps {
                 echo "Building the application..."
                 sh '''
-                # Example for Node.js app
-                npm install
-                npm run build
-                # For Python app, use:
-                # pip install -r requirements.txt
+                    # Example for Node.js app
+                    if [ -f package.json ]; then
+                        npm install
+                        npm run build
+                    else
+                        echo "No Node.js build detected."
+                    fi
                 '''
             }
         }
@@ -35,18 +37,17 @@ pipeline {
                 echo "Deploying to target server..."
                 sshagent(['my-ssh-credentials']) {
                     sh '''
-                    ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST << EOF
-                        echo "Cleaning old code..."
-                        rm -rf $DEPLOY_DIR/*
-                        mkdir -p $DEPLOY_DIR
-                        exit
-                    EOF
+                        ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST << EOF
+                            echo "Cleaning old code..."
+                            rm -rf $DEPLOY_DIR/*
+                            mkdir -p $DEPLOY_DIR
+                        EOF
 
-                    echo "Copying new build..."
-                    scp -o StrictHostKeyChecking=no -r * $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/
+                        echo "Copying new build..."
+                        scp -o StrictHostKeyChecking=no -r * $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/
 
-                    echo "Restarting service..."
-                    ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST "bash $SERVICE_SCRIPT"
+                        echo "Restarting service..."
+                        ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST "bash $SERVICE_SCRIPT"
                     '''
                 }
             }
