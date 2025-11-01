@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         APP_NAME = "myapp"
-        DEPLOY_USER = "ec2-user"
-        DEPLOY_HOST = "your.server.ip"   // Replace with your EC2 public IP or hostname
+        DEPLOY_USER = "ecs-ec2-user"
+        DEPLOY_HOST = "13.232.134.238"   // Replace with your EC2 public IP or hostname
         DEPLOY_DIR = "/var/www/myapp"
         SERVICE_SCRIPT = "/var/www/myapp/restart.sh"
     }
@@ -57,13 +57,13 @@ pipeline {
     post {
         success {
             echo "Build and deployment successful!"
-            mail to: 'team@example.com',
+            mail to: 'vemula.guptha@triconinfotech.com',
                  subject: "SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
                  body: "Good news! The build and deployment completed successfully."
         }
         failure {
             echo "Build or deployment failed!"
-            mail to: 'team@example.com',
+            mail to: 'vemula.guptha@triconinfotech.com',
                  subject: "FAILED: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
                  body: "Unfortunately, the build or deployment failed. Check Jenkins logs for details."
         }
