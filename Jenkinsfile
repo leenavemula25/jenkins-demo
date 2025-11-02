@@ -1,71 +1,38 @@
 pipeline {
     agent any
 
-    environment {
-        APP_NAME = "myapp"
-        DEPLOY_USER = "ecs-ec2-user"
-        DEPLOY_HOST = "13.232.134.238"   // Replace with your EC2 public IP or hostname
-        DEPLOY_DIR = "/var/www/myapp"
-        SERVICE_SCRIPT = "/var/www/myapp/restart.sh"
+    tools {
+        nodejs 'node18'   // Must match the name in Manage Jenkins → Tools
     }
 
     stages {
         stage('Checkout Code') {
             steps {
-                echo "Checking out code..."
-                git branch: 'main', url: 'https://github.com/leenavemula25/jenkins-demo.git', credentialsId: 'github-token'
+                echo 'Checking out code...'
             }
         }
 
         stage('Build App') {
             steps {
-                echo "Building the application..."
-                sh '''
-                    # Example for Node.js app
-                    if [ -f package.json ]; then
-                        npm install
-                        npm run build
-                    else
-                        echo "No Node.js build detected."
-                    fi
-                '''
+                echo "Installing dependencies..."
+                sh 'npm install'
             }
         }
 
-        stage('Deploy to Server') {
+        stage('Deploy Locally') {
             steps {
-                echo "Deploying to target server..."
-                sshagent(['my-ssh-credentials']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST << EOF
-                            echo "Cleaning old code..."
-                            rm -rf $DEPLOY_DIR/*
-                            mkdir -p $DEPLOY_DIR
-                        EOF
-
-                        echo "Copying new build..."
-                        scp -o StrictHostKeyChecking=no -r * $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/
-
-                        echo "Restarting service..."
-                        ssh -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST "bash $SERVICE_SCRIPT"
-                    '''
-                }
+                echo 'Starting the app...'
+                sh 'bash restart.sh'
             }
         }
     }
 
     post {
         success {
-            echo "Build and deployment successful!"
-            mail to: 'vemula.guptha@triconinfotech.com',
-                 subject: "SUCCESS: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
-                 body: "Good news! The build and deployment completed successfully."
+            echo 'Build and deployment successful!'
         }
         failure {
-            echo "Build or deployment failed!"
-            mail to: 'vemula.guptha@triconinfotech.com',
-                 subject: "FAILED: ${env.JOB_NAME} Build #${env.BUILD_NUMBER}",
-                 body: "Unfortunately, the build or deployment failed. Check Jenkins logs for details."
+            echo 'Build or deployment failed!'
         }
     }
 }
